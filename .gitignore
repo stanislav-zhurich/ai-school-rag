@@ -1,0 +1,66 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg
+*.egg-info/
+dist/
+build/
+*.whl
+
+# Virtual environments
+.venv/
+venv/
+env/
+.env
+
+# Poetry
+.poetry/
+
+# Environment variables
+.env
+.env.*
+*.env
+
+# IDE
+.vscode/
+.idea/
+*.iml
+.cursor/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Data & models
+data/raw/
+data/processed/
+*.csv
+*.parquet
+*.pkl
+*.h5
+*.pt
+*.pth
+*.bin
+*.onnx
+
+# Logs & output
+logs/
+*.log
+output/
+results/
+
+# ChromaDB
+chroma_db/
+*.chroma
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
