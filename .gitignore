@@ -40,7 +40,7 @@ desktop.ini
 
 # Data & models
 data/raw/
-data/processed/
+data/processed/images/
 *.csv
 *.parquet
 *.pkl

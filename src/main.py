@@ -1,26 +1,26 @@
-from ingestion.pdf_loader import CLIPEmbedder, PDFLoader, ImageExtractor
+from loaders.csv_loader import CSVLoader
+from chunkers.identity import IdentityChunker
 import os
 import kagglehub
 
-KAGGLE_DATASET_HANDLE = "jayakarakini/game-rules"
+KAGGLE_DATASET_HANDLE = "datadrivendecision/trump-tweets-2009-2025"
+#"jayakarakini/game-rules"
 
 def main():
     print("=== RAG Pipeline ===")
     print("Downloading dataset...")
-    pdf_paths  = download_dataset(KAGGLE_DATASET_HANDLE)
+    file_paths = download_dataset(KAGGLE_DATASET_HANDLE)
 
-    embedder = CLIPEmbedder()
+    csv_loader = CSVLoader(processed_dir="data/processed")
+    tweets = csv_loader.load(file_paths[0])
 
-    # Text pipeline
-    loader = PDFLoader(ocr_enabled=True)
-    docs = loader.load_files(pdf_paths)
+    chunker = IdentityChunker()
+    chunks = chunker.chunk(tweets)
+    print(f"Chunks: {chunks}")
 
-    # Image pipeline
-    extractor = ImageExtractor(embedder)
-    images = extractor.extract_from_files(pdf_paths, image_dir="data/processed/images")
 
 def download_dataset(kaggle_dataset_handle: str, output_dir: str = "data/raw") -> list[str]:
-    """Download a Kaggle dataset and return the paths of all PDF files found."""
+    """Download a Kaggle dataset and return the paths of regular files only."""
     os.makedirs(output_dir, exist_ok=True)
     path = kagglehub.dataset_download(
         handle=kaggle_dataset_handle,
@@ -29,7 +29,7 @@ def download_dataset(kaggle_dataset_handle: str, output_dir: str = "data/raw") -
     files = [
         os.path.join(path, f)
         for f in os.listdir(path)
-        if f.lower().endswith(".pdf")
+        if os.path.isfile(os.path.join(path, f))
     ]
     return files
 
