@@ -4,8 +4,9 @@ SlidingWindowChunker — groups N consecutive tweets with optional overlap.
 
 import logging
 
-from model.models import Tweet
-from .base import BaseChunker, Chunk
+from model.tweet import Tweet
+from model.chunk import Chunk
+from .base import BaseChunker
 
 logger = logging.getLogger(__name__)
 

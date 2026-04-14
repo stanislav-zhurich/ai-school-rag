@@ -1,38 +1,53 @@
+"""
+Entry point for the one-time vector-database ingestion.
+
+Run this script once to download the dataset, chunk the tweets,
+compute embeddings, and populate ChromaDB.  The Streamlit app (app.py)
+reads from the same database at query time without re-ingesting.
+
+Usage
+-----
+    poetry run python src/main.py
+"""
+
+import config
+from chunkers.factory import ChunkerFactory
+from embedder import NomicEmbedder, OpenAIEmbedder
+from RAG import RAG
+from ingestion import IngestionPipeline
 from loaders.csv_loader import CSVLoader
-from chunkers.identity import IdentityChunker
-import os
-import kagglehub
-
-KAGGLE_DATASET_HANDLE = "datadrivendecision/trump-tweets-2009-2025"
-#"jayakarakini/game-rules"
-
-def main():
-    print("=== RAG Pipeline ===")
-    print("Downloading dataset...")
-    file_paths = download_dataset(KAGGLE_DATASET_HANDLE)
-
-    csv_loader = CSVLoader(processed_dir="data/processed")
-    tweets = csv_loader.load(file_paths[0])
-
-    chunker = IdentityChunker()
-    chunks = chunker.chunk(tweets)
-    print(f"Chunks: {chunks}")
+from vectorstore import ChromaDBStore
 
 
-def download_dataset(kaggle_dataset_handle: str, output_dir: str = "data/raw") -> list[str]:
-    """Download a Kaggle dataset and return the paths of regular files only."""
-    os.makedirs(output_dir, exist_ok=True)
-    path = kagglehub.dataset_download(
-        handle=kaggle_dataset_handle,
-        output_dir=output_dir,
+def main() -> None:
+    # --- Download raw dataset ------------------------------------------------
+    print("Downloading dataset…")
+    file_paths = IngestionPipeline.download_kaggle(config.KAGGLE_DATASET_HANDLE)
+    print(f"Dataset path: {file_paths[0]}")
+
+    # --- Wire up components --------------------------------------------------
+    embedder = OpenAIEmbedder()
+    vector_store = ChromaDBStore()
+
+    pipeline = IngestionPipeline(
+        loader=CSVLoader(processed_dir=config.PROCESSING_DIR),
+        chunker=ChunkerFactory.create(config.CHUNKING_STRATEGY, embed_fn=embedder),
+        embedder=embedder,
+        vector_store=vector_store,
     )
-    files = [
-        os.path.join(path, f)
-        for f in os.listdir(path)
-        if os.path.isfile(os.path.join(path, f))
-    ]
-    return files
 
-    
+    # --- Run -----------------------------------------------------------------
+    result = pipeline.chunk_embed_store(
+        file_paths[0],
+        sample=config.MAX_TWEETS,
+        random_seed=42,
+    )
+    print(result)
+
+    rag: RAG = RAG(embedder, vector_store)
+    answer, _ = rag.get_answer("What Trump tweets about Putin?")
+    print(f"Answer: {answer}")
+
+
 if __name__ == "__main__":
     main()

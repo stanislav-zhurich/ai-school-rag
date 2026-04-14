@@ -31,12 +31,11 @@ parsing entirely.  The cache key is based on the CSV filename.
 import csv
 import json
 import logging
+import random
 from datetime import datetime, timezone
 from pathlib import Path
 
-from model.models import Tweet
-
-logger = logging.getLogger(__name__)
+from model.tweet import Tweet
 
 _BOOL_MAP = {"true": True, "false": False, "1": True, "0": False}
 
@@ -65,7 +64,7 @@ def _parse_date(value: str) -> datetime:
             dt = dt.replace(tzinfo=timezone.utc)
         return dt
     except ValueError:
-        logger.warning("Could not parse date %r, using epoch", value)
+        print(f"Could not parse date {value}, using epoch")
         return datetime(1970, 1, 1, tzinfo=timezone.utc)
 
 
@@ -105,6 +104,8 @@ class CSVLoader:
         exclude_reposts: bool = False,
         exclude_deleted: bool = False,
         max_rows: int | None = None,
+        sample: int | None = None,
+        random_seed: int | None = None,
     ) -> list[Tweet]:
         """
         Parse *csv_path* and return a filtered list of :class:`Tweet` objects.
@@ -115,20 +116,30 @@ class CSVLoader:
         start_date:      Keep only tweets on or after this datetime (tz-aware).
         end_date:        Keep only tweets on or before this datetime (tz-aware).
         platforms:       Whitelist of platform names; ``None`` keeps all.
-        exclude_reposts: When *True* (default), drop reposted entries.
-        exclude_deleted: When *True* (default), drop deleted entries.
-        max_rows:        Cap the number of tweets returned after filtering.
+        exclude_reposts: When *True*, drop reposted entries.
+        exclude_deleted: When *True*, drop deleted entries.
+        max_rows:        Cap the number of tweets returned sequentially (first N
+                         tweets that pass filters).
+        sample:          Return a random subset of *sample* tweets from the full
+                         filtered pool.  Unlike *max_rows*, this draws from the
+                         entire dataset rather than stopping at the first N.
+                         Mutually exclusive with *max_rows*.
+        random_seed:     Seed for the random sampler so results are reproducible.
+                         Only used when *sample* is set.
         """
+        if max_rows and sample:
+            raise ValueError("max_rows and sample are mutually exclusive — use one or the other.")
+
         csv_path = Path(csv_path)
         if not csv_path.exists():
             raise FileNotFoundError(f"CSV file not found: {csv_path}")
 
         cache_path = self._cache_path(csv_path)
         if cache_path and cache_path.exists():
-            logger.info("Loading tweets from cache: %s", cache_path)
+            print(f"Loading tweets from cache: {cache_path}")
             tweets = self._load_cache(cache_path)
         else:
-            logger.info("Parsing CSV: %s", csv_path)
+            print(f"Parsing CSV: {csv_path}")
             tweets = self._parse_csv(csv_path)
             if cache_path:
                 self._save_cache(tweets, cache_path)
@@ -153,11 +164,16 @@ class CSVLoader:
             if max_rows and len(filtered) >= max_rows:
                 break
 
-        logger.info(
-            "Loaded %d tweets from %s (%d after filtering)",
+        if sample is not None:
+            rng = random.Random(random_seed)
+            filtered = rng.sample(filtered, min(sample, len(filtered)))
+
+        print(
+            "Loaded %d tweets from %s (%d after filtering%s)",
             len(tweets),
             csv_path.name,
             len(filtered),
+            f", {len(filtered)} sampled" if sample is not None else "",
         )
         return filtered
 
@@ -182,7 +198,7 @@ class CSVLoader:
                 else:
                     skipped += 1
         if skipped:
-            logger.warning("Skipped %d malformed rows", skipped)
+            print(f"Skipped {skipped} malformed rows")
         return tweets
 
     def _parse_row(self, row: dict) -> Tweet | None:
@@ -208,7 +224,7 @@ class CSVLoader:
                 in_reply_to=row.get("in_reply_to", "").strip() or None,
             )
         except Exception as exc:
-            logger.debug("Failed to parse row id=%r: %s", row.get("id"), exc)
+            print("Failed to parse row id=%r: %s", row.get("id"), exc)
             return None
 
     def _save_cache(self, tweets: list[Tweet], cache_path: Path) -> None:
@@ -218,7 +234,7 @@ class CSVLoader:
             json.dumps(payload, ensure_ascii=False, indent=2),
             encoding="utf-8",
         )
-        logger.info("Saved %d tweets to cache: %s", len(tweets), cache_path)
+        print("Saved %d tweets to cache: %s", len(tweets), cache_path)
 
     def _load_cache(self, cache_path: Path) -> list[Tweet]:
         payload = json.loads(cache_path.read_text(encoding="utf-8"))

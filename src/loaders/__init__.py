@@ -1,8 +1,5 @@
-from .clip_embedder import CLIPEmbedder
 from .csv_loader import CSVLoader
-from .image_extractor import ImageExtractor
-from model.models import Tweet
-from .text_extractor import TextExtractor
+from model.tweet import Tweet
 from chunkers import (
     BaseChunker,
     Chunk,

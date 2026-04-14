@@ -19,8 +19,9 @@ import logging
 import math
 from typing import Protocol, runtime_checkable
 
-from model.models import Tweet
-from .base import BaseChunker, Chunk
+from model import Tweet
+from model import Chunk
+from .base import BaseChunker
 
 logger = logging.getLogger(__name__)
 
@@ -109,7 +110,13 @@ class SemanticChunker(BaseChunker):
         current_group: list[Tweet] = []
         current_embeddings: list[list[float]] = []
 
-        for tweet in tweets:
+        total = len(tweets)
+        log_every = max(1, total // 10)
+
+        for i, tweet in enumerate(tweets, 1):
+            if i % log_every == 0 or i == total:
+                logger.info("SemanticChunker: embedded %d / %d tweets", i, total)
+
             emb = self.embed_fn(tweet.text)
 
             if not current_group:

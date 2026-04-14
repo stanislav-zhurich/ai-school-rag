@@ -5,8 +5,9 @@ TimeWindowChunker — groups tweets that fall in the same calendar period.
 import logging
 from collections import defaultdict
 
-from model.models import Tweet
-from .base import BaseChunker, Chunk
+from model.tweet import Tweet
+from model.chunk import Chunk
+from .base import BaseChunker
 
 logger = logging.getLogger(__name__)
 
