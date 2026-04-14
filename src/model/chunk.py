@@ -37,10 +37,6 @@ class Chunk:
         total_reposts   (int)  – sum of repost counts
         hashtags        (str)  – space-joined unique hashtags (may be empty)
 
-        Optional keys (set by specific chunkers):
-        ==========================================
-        time_bucket (str)  – TimeWindowChunker: bucket label (e.g. "2020-W03")
-        theme       (str)  – LLMChunker: LLM-assigned theme label
     """
 
     id: str

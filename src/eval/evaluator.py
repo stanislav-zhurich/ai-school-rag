@@ -100,6 +100,7 @@ def evaluate(
             user_input=eq.question,
             response=answer,
             retrieved_contexts=contexts,
+            reference=eq.reference,
         ))
 
     # --- run RAGAS evaluation ------------------------------------------------

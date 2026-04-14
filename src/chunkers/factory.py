@@ -5,7 +5,6 @@ Usage
 -----
     chunker = ChunkerFactory.create("sliding_window", window_size=10, stride=5)
     chunker = ChunkerFactory.create("semantic", embed_fn=embedder)
-    chunker = ChunkerFactory.create("time_window", period="week")
     chunker = ChunkerFactory.create("identity")
 """
 
@@ -16,7 +15,7 @@ from typing import Any
 from chunkers.base import BaseChunker
 
 
-_STRATEGIES = ("identity", "sliding_window", "time_window", "semantic")
+_STRATEGIES = ("identity", "sliding_window", "semantic")
 
 
 class ChunkerFactory:
@@ -37,7 +36,6 @@ class ChunkerFactory:
 
             identity       — no arguments needed
             sliding_window — window_size (int), stride (int | None)
-            time_window    — period ("day"|"week"|"month"|"year"), min_tweets (int)
             semantic       — embed_fn (callable), similarity_threshold (float),
                              max_chunk_size (int), min_chunk_size (int)
 
@@ -46,6 +44,8 @@ class ChunkerFactory:
         ValueError
             If *strategy* is not recognised.
         """
+        embed_fn = kwargs.pop("embed_fn", None)
+
         match strategy:
             case "identity":
                 from chunkers.identity import IdentityChunker
@@ -55,13 +55,13 @@ class ChunkerFactory:
                 from chunkers.sliding_window import SlidingWindowChunker
                 return SlidingWindowChunker(**kwargs)
 
-            case "time_window":
-                from chunkers.time_window import TimeWindowChunker
-                return TimeWindowChunker(**kwargs)
-
             case "semantic":
                 from chunkers.semantic import SemanticChunker
-                return SemanticChunker(**kwargs)
+                if embed_fn is None:
+                    raise ValueError(
+                        "SemanticChunker requires an 'embed_fn' argument."
+                    )
+                return SemanticChunker(embed_fn=embed_fn, **kwargs)
 
             case _:
                 raise ValueError(

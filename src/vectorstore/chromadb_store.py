@@ -1,19 +1,23 @@
 import chromadb
 from typing import Any
-from config import CHROMA_PATH, COLLECTION_NAME
+from config import CHUNKING_STRATEGY, COLLECTION_NAME
 from model.chunk import Chunk
 from model.search_result import SearchResult
 
 
 class ChromaDBStore:
     def __init__(self):
-        self.client = chromadb.PersistentClient(path=CHROMA_PATH)
+        self.client = chromadb.PersistentClient(path=f"./chroma_db_{CHUNKING_STRATEGY}")
         self.collection = self.client.get_or_create_collection(
             COLLECTION_NAME,
             metadata={"hnsw:space": "cosine"},
         )
 
     _CHROMA_BATCH_LIMIT = 5000
+
+    def is_populated(self) -> bool:
+        """Return True if the collection already contains at least one document."""
+        return self.collection.count() > 0
 
     def add_chunks(self, chunks: list[Chunk], embeddings: list[list[float]]) -> None:
         """Store chunks with their text, metadata and pre-computed embeddings.

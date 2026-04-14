@@ -29,7 +29,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 import config
-from embedder.embedder import Embedder
+from embedder import OpenAIEmbedder, OpenAIEmbedder
 from loaders.csv_loader import CSVLoader
 from model.tweet import Tweet
 from RAG import RAG
@@ -64,13 +64,13 @@ def load_tweets() -> list[Tweet]:
         for f in os.listdir(path)
         if os.path.isfile(os.path.join(path, f))
     ]
-    loader = CSVLoader(processed_dir="data/processed")
+    loader = CSVLoader(processed_dir=config.PROCESSING_DIR)
     return loader.load(files[0], sample=config.MAX_TWEETS, random_seed=42)
 
 
 @st.cache_resource(show_spinner="Initialising RAG pipeline…")
 def get_rag() -> RAG:
-    return RAG(Embedder(), ChromaDBStore())
+    return RAG(OpenAIEmbedder(), ChromaDBStore())
 
 
 def tweets_to_df(tweets: list[Tweet]) -> pd.DataFrame:
@@ -317,8 +317,15 @@ with tab_rag:
                     help=r.metadata.get("start_date", "")[:10],
                 )
 
-            quality = "🟢 Good" if avg_score > 0.7 else "🟡 Fair" if avg_score > 0.5 else "🔴 Low"
+            quality = "🟢 Good" if avg_score >= 0.55 else "🟡 Fair" if avg_score >= 0.5 else "🔴 Low"
             score_cols[-1].metric("Average", f"{avg_score:.3f}", delta=quality)
+
+            if avg_score < 0.5:
+                st.warning(
+                    "⚠️ The retrieved context has low relevance to this query. "
+                    "The answer may be unreliable or the topic may not be covered in the dataset.",
+                    icon=None,
+                )
 
             # Retrieved chunks (expandable) ------------------------------------
             st.markdown("### Retrieved Context Chunks")

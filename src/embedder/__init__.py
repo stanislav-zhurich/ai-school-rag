@@ -1,5 +1,9 @@
-from .embedder import Embedder
+from .base_embedder import BaseEmbedder
+from .nomic_embedder import NomicEmbedder
+from .openai_embedder import OpenAIEmbedder
 
 __all__ = [
-    "Embedder",
+    "BaseEmbedder",
+    "NomicEmbedder",
+    "OpenAIEmbedder",
 ]

@@ -1,13 +1,13 @@
 from __future__ import annotations
 from chunkers import BaseChunker
-from embedder import Embedder
+from embedder import BaseEmbedder
 from vectorstore import ChromaDBStore
 from model.search_result import SearchResult
 from openai import AzureOpenAI
 import config
 
 class RAG:
-    def __init__(self, embedder: Embedder, vector_store: ChromaDBStore, chunker: BaseChunker | None = None):
+    def __init__(self, embedder: BaseEmbedder, vector_store: ChromaDBStore, chunker: BaseChunker | None = None):
         self.chunker = chunker
         self.embedder = embedder
         self.vector_store = vector_store

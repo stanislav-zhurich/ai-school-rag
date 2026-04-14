@@ -11,8 +11,6 @@ from model.tweet import Tweet
 from model.chunk import Chunk
 from .base import BaseChunker
 
-logger = logging.getLogger(__name__)
-
 
 class IdentityChunker(BaseChunker):
     """
@@ -30,5 +28,5 @@ class IdentityChunker(BaseChunker):
             for tweet in tweets
             if not tweet.is_empty
         ]
-        logger.info("IdentityChunker: %d tweets → %d chunks", len(tweets), len(chunks))
+        print(f"IdentityChunker: {len(tweets)} tweets → {len(chunks)} chunks")
         return chunks
