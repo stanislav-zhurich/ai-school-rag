@@ -163,13 +163,25 @@ echo "OPENAI_API_KEY=<your-azure-openai-key>" > .env
 poetry run python src/main.py
 ```
 
-This downloads the dataset, chunks the tweets, computes embeddings, and populates ChromaDB. The index is persisted to `chroma_db_identity/` and is reused on subsequent runs automatically.
+This downloads the dataset, chunks the tweets, computes embeddings, and populates ChromaDB.
 
-To rebuild from scratch (e.g. after changing `CHUNKING_STRATEGY`):
+The vector store directory is named after the active chunking strategy — `chroma_db_<strategy>`:
+
+| `CHUNKING_STRATEGY` | Directory |
+|---|---|
+| `"identity"` | `chroma_db_identity/` |
+| `"sliding_window"` | `chroma_db_sliding_window/` |
+| `"semantic"` | `chroma_db_semantic/` |
+
+Each strategy gets its own isolated store, so you can build and compare multiple indexes without overwriting each other. The app automatically connects to the directory that matches the current `CHUNKING_STRATEGY` value in `config.py`.
+
+Subsequent runs skip ingestion automatically if the target store already contains data.
+
+To rebuild from scratch (e.g. after changing tweet filters or the embedding model):
 
 ```powershell
-# Delete the vector store and processed tweet cache
-Remove-Item -Recurse -Force chroma_db_identity, data/processed
+# Delete the store for the active strategy and the processed tweet cache
+Remove-Item -Recurse -Force chroma_db_identity, data/processed   # adjust name to match strategy
 poetry run python src/main.py
 ```
 
