@@ -2,11 +2,13 @@
 
 A **Retrieval-Augmented Generation (RAG)** application that lets you explore and query Donald Trump's tweets (2009–2025) through a Streamlit web interface. The app combines semantic search over a vector database with an Azure OpenAI language model to answer natural-language questions about the tweet corpus.
 
+**Dataset:** [Trump Tweets 2009–2025](https://www.kaggle.com/datasets/datadrivendecision/trump-tweets-2009-2025) on Kaggle.
+
 ---
 
 ## 1. What the Application Does
 
-- **Ingests** up to tens of thousands of tweets from a Kaggle dataset into a ChromaDB vector store (run once).
+- **Ingests** up to tens of thousands of tweets from the [Kaggle dataset](https://www.kaggle.com/datasets/datadrivendecision/trump-tweets-2009-2025) into a ChromaDB vector store (run once).
 - **Answers questions** in natural language using RAG: the query is embedded, the most relevant tweet chunks are retrieved, and an LLM synthesises a grounded answer.
 - **Visualises** the tweet corpus across time, platforms, engagement, hashtags, and post types.
 - **Evaluates** the RAG pipeline on a built-in set of 10 reference questions using [RAGAS](https://docs.ragas.io/) metrics (Faithfulness, Context Precision, Context Recall).
@@ -233,7 +235,7 @@ Ask natural-language questions and receive answers grounded in the tweet corpus.
 2. **Chunks to retrieve** — slider (1–10) controlling how many tweet chunks are passed as context to the LLM.
 3. **Your question** — type a question and press **Enter** or click **Ask**.
 4. **Answer** — the LLM's synthesised response, citing or paraphrasing specific tweets.
-5. **Context Relevance Score** — cosine similarity between your query and each retrieved chunk. Scores ≥ 0.80 are 🟢 Good; 0.72–0.79 are 🟡 Fair; below 0.72 are 🔴 Low and trigger a warning.
+5. **Context Relevance Score** — cosine similarity between your query and each retrieved chunk. Scores ≥ 0.55 are 🟢 Good; 0.50–0.54 are 🟡 Fair; below 0.50 are 🔴 Low and trigger a warning that the topic may not be covered in the dataset.
 6. **Retrieved Context Chunks** — expandable cards showing the exact tweet text and metadata (date, platform) used to generate the answer.
 
 > **Tip:** If you receive "I cannot answer", check the relevance scores — a low score means the topic is likely not covered in the indexed dataset.
