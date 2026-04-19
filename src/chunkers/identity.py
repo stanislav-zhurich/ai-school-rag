@@ -5,8 +5,6 @@ Useful as a baseline, for debugging, or when you want fine-grained
 per-tweet retrieval with full metadata filtering.
 """
 
-import logging
-
 from model.tweet import Tweet
 from model.chunk import Chunk
 from .base import BaseChunker

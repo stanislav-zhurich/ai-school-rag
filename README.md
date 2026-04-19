@@ -20,10 +20,19 @@ A **Retrieval-Augmented Generation (RAG)** application that lets you explore and
 ```
 ai-school-rag/
 ├── src/
-│   ├── app.py                    # Streamlit UI entry point
+│   ├── app.py                    # Streamlit entry point (tab wiring only)
 │   ├── main.py                   # One-time ingestion entry point
 │   ├── RAG.py                    # RAG orchestrator (embed → retrieve → generate)
-│   ├── config.py                 # Shared configuration constants
+│   ├── config.py                 # Dataclass-based settings (Azure + Pipeline)
+│   │
+│   ├── ui/                       # Streamlit UI package
+│   │   ├── __init__.py           # Re-exports renderers and cache factories
+│   │   ├── constants.py          # Year/platform options, quality thresholds
+│   │   ├── cache.py              # @st.cache_data / @st.cache_resource factories
+│   │   ├── filters.py            # build_where_filter() for ChromaDB queries
+│   │   ├── dashboard_tab.py      # Dashboard tab renderer
+│   │   ├── rag_tab.py            # RAG Assistant tab renderer
+│   │   └── eval_tab.py           # Evaluation tab renderer
 │   │
 │   ├── ingestion/
 │   │   └── pipeline.py           # IngestionPipeline: load → chunk → embed → store
@@ -52,7 +61,7 @@ ai-school-rag/
 │   │   └── search_result.py      # SearchResult dataclass
 │   │
 │   └── eval/
-│       ├── eval_dataset.py       # 10 reference questions with ground-truth answers
+│       ├── eval_dataset.py       # 10 reference questions + reference answers
 │       └── evaluator.py          # RAGAS-based evaluation (Faithfulness, Precision, Recall)
 │
 ├── data/
@@ -197,13 +206,37 @@ Open [http://localhost:8501](http://localhost:8501) in your browser.
 
 ### Configuration (`src/config.py`)
 
-| Key | Default | Description |
+Configuration is exposed as two frozen dataclasses plus module-level aliases
+for backwards compatibility:
+
+- `config.pipeline` (`PipelineSettings`) — dataset, chunking, vector store
+- `config.azure()` (`AzureSettings`) — endpoint, deployment, API key (read
+  lazily so the module imports even without `OPENAI_API_KEY` set)
+
+**Pipeline settings**
+
+| Attribute | Default | Description |
 |---|---|---|
-| `CHUNKING_STRATEGY` | `"identity"` | `"identity"` / `"sliding_window"` / `"semantic"` |
-| `MAX_TWEETS` | `10000` | Maximum tweets sampled for ingestion and dashboard |
-| `CHROMA_PATH` | `"./chroma_db_identity"` | Vector store directory |
-| `CHAT_MODEL` | `"gpt-4o"` | Azure OpenAI chat deployment name |
-| `DIAL_URL` | `"https://ai-proxy.lab.epam.com"` | Azure OpenAI endpoint |
+| `chunking_strategy` | `"identity"` | `"identity"` / `"sliding_window"` / `"semantic"` |
+| `max_tweets` | `10_000` | Maximum tweets sampled for ingestion and dashboard |
+| `kaggle_dataset_handle` | `"datadrivendecision/trump-tweets-2009-2025"` | Source dataset on Kaggle |
+| `collection_name` | `"documents"` | ChromaDB collection name |
+| `chroma_path` | `./chroma_db_<strategy>` | Persistent store directory (derived from `chunking_strategy`) |
+| `raw_dir` / `processed_dir` | `data/raw` / `data/processed` | Dataset locations |
+
+**Azure settings**
+
+| Attribute | Default | Description |
+|---|---|---|
+| `endpoint` | `"https://ai-proxy.lab.epam.com"` | Azure OpenAI / DIAL endpoint |
+| `chat_deployment` | `"gpt-4o"` | Azure OpenAI chat deployment name |
+| `api_version` | `"2024-10-21"` | Azure OpenAI API version |
+| `api_key` | *from `OPENAI_API_KEY`* | Read from env on first use |
+
+Legacy module-level constants (`CHUNKING_STRATEGY`, `MAX_TWEETS`,
+`COLLECTION_NAME`, `DIAL_URL`, `CHAT_MODEL`, `API_VERSION`, `API_KEY`,
+`KAGGLE_DATASET_HANDLE`, `PROCESSING_DIR`) are still exported from
+`config` so existing imports keep working.
 
 ---
 
